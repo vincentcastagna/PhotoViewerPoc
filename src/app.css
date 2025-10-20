@@ -1,0 +1,24 @@
+:root {
+  color-scheme: light;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  color: inherit;
+}
+
+#app {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+a {
+  color: inherit;
+}
