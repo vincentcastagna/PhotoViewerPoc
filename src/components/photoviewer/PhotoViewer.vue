@@ -46,21 +46,33 @@
             >
               ‹
             </button>
-            <PhotoStage
-              ref="stageRef"
-              :image="viewer.currentImage.value"
-              :zoom-enabled="zoomEnabled"
-              @loaded="handleImageLoaded"
-              @error="handleImageError"
-              @zoom-change="onZoomChange"
-            />
-            <Transition name="pv-loader-fade">
-              <div v-if="isImageLoading" class="pv-stage-loader" role="status" aria-live="polite" aria-label="Loading image">
-                <span class="pv-stage-loader__track">
-                  <span class="pv-stage-loader__bar" />
-                </span>
-              </div>
-            </Transition>
+            <div class="pv-stage-display">
+              <Transition :name="stageTransitionName">
+                <PhotoStage
+                  v-if="viewer.currentImage.value"
+                  :key="viewer.currentIndex.value"
+                  ref="stageRef"
+                  :image="viewer.currentImage.value"
+                  :zoom-enabled="zoomEnabled"
+                  @loaded="handleImageLoaded"
+                  @error="handleImageError"
+                  @zoom-change="onZoomChange"
+                />
+              </Transition>
+              <Transition name="pv-loader-fade">
+                <div
+                  v-if="isImageLoading"
+                  class="pv-stage-loader"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading image"
+                >
+                  <span class="pv-stage-loader__track">
+                    <span class="pv-stage-loader__bar" />
+                  </span>
+                </div>
+              </Transition>
+            </div>
             <button
               type="button"
               class="pv-stage-nav pv-stage-nav--next"
@@ -88,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, toRefs, useId } from 'vue';
+import { computed, onBeforeUnmount, ref, toRefs, useId, watch } from 'vue';
 import PhotoControls from './PhotoControls.vue';
 import PhotoStage from './PhotoStage.vue';
 import PhotoThumbnails from './PhotoThumbnails.vue';
@@ -142,6 +154,10 @@ const stageRef = ref<InstanceType<typeof PhotoStage> | null>(null);
 const focusStart = ref<HTMLSpanElement | null>(null);
 const focusEnd = ref<HTMLSpanElement | null>(null);
 const titleId = useId();
+const transitionDirection = ref<'next' | 'prev'>('next');
+const stageTransitionName = computed(() =>
+  transitionDirection.value === 'next' ? 'pv-stage-slide-next' : 'pv-stage-slide-prev'
+);
 
 const { isImageLoading, handleImageLoaded, handleImageError } =
   usePhotoViewerController({
@@ -197,6 +213,24 @@ function onKeydown(event: KeyboardEvent) {
     onResetZoom: () => stageRef.value?.resetZoom()
   });
 }
+
+watch(
+  () => viewer.currentIndex.value,
+  (next, prev) => {
+    if (prev === undefined || next === prev) return;
+    const total = images.value.length;
+    if (total <= 1) return;
+
+    if (!viewer.loop.value) {
+      transitionDirection.value = next > prev ? 'next' : 'prev';
+      return;
+    }
+
+    const forwardDistance = (next - prev + total) % total;
+    const backwardDistance = (prev - next + total) % total;
+    transitionDirection.value = forwardDistance <= backwardDistance ? 'next' : 'prev';
+  }
+);
 
 const showThumbnails = computed(
   () => (props.showThumbnails ?? true) && images.value.length > 1
